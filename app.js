@@ -29,15 +29,20 @@ window.matchMedia('(min-width: 761px)').addEventListener('change', event => {
 });
 
 function loadGuideImage(image, priority = 'high') {
+  if (priority === 'high') {
+    document.querySelectorAll('.gallery img[fetchpriority="high"]').forEach(other => {
+      if (other !== image) other.fetchPriority = 'auto';
+    });
+  }
   image.fetchPriority = priority;
   image.loading = 'eager';
 }
 
-function preloadGallery(gallery) {
+function preloadGallery(gallery, priority = 'auto') {
   const track = gallery.querySelector('.gallery-track');
   const images = [...track.querySelectorAll('img')];
   const index = Math.max(0, Math.min(images.length - 1, Math.round(track.scrollLeft / track.clientWidth)));
-  loadGuideImage(images[index]);
+  loadGuideImage(images[index], priority);
   images.forEach((image, imageIndex) => {
     if (imageIndex !== index) loadGuideImage(image, 'low');
   });
@@ -49,14 +54,17 @@ const galleryObserver = new IntersectionObserver(entries => {
     preloadGallery(entry.target);
     galleryObserver.unobserve(entry.target);
   });
-}, { rootMargin: '100% 0px' });
+}, { rootMargin: '600px 0px' });
 document.querySelectorAll('.gallery').forEach(gallery => galleryObserver.observe(gallery));
 
 function openGuideTarget(hash) {
   const target = document.getElementById(hash.slice(1));
   if (target?.matches('.faq-list details')) target.open = true;
   const gallery = target?.querySelector('.gallery');
-  if (gallery) preloadGallery(gallery);
+  if (gallery) {
+    preloadGallery(gallery, 'high');
+    galleryObserver.unobserve(gallery);
+  }
 }
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', () => openGuideTarget(link.hash));
